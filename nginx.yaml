@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: onlyoffice-example
+  labels:
+    env: onlyoffice
+spec:
+  containers:
+  - name: swm-onlyoffice-builder-example
+    image: uranus01.swmcloud.net/reports-onlyoffice-builder/swm-onlyoffice-builder-example:v7.4.0-1-swm-add-doc-example-2b3a4e96

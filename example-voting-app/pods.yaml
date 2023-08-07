@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+  labels:
+    app: redis
+    type: back-end
+spec:
+  containers:
+  - name: redis
+    image: redis
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+    type: back-end
+spec:
+  containers:
+  - name: postgres
+    image: postgres
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: voting-app
+  labels:
+    app: voting-app
+    type: front-end
+spec:
+  containers:
+  - name: voting-app
+    image: kodekloud/examplevotingapp_vote:v1
+    ports:
+    - containerPort: 80
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: result-app
+  labels:
+    app: result-app
+    type: front-end
+spec:
+  containers:
+  - name: result-app
+    image: kodekloud/examplevotingapp_result:v1
+    ports:
+    - containerPort: 80
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: worker
+  labels:
+    app: worker
+    type: back-end
+spec:
+  containers:
+  - name: worker
+    image: kodekloud/examplevotingapp_worker:v1

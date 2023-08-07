@@ -1,0 +1,172 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: reports-onlyoffice-standalone
+  annotations:
+    openshift.io/display-name: Reports Visualizer
+    openshift.io/documentation-url: https://gitlab.swmcloud.net/reports/visualizer
+    openshift.io/support-url: mailto:dsl-squadfbi@softwaymedical.fr
+    openshift.io/provider-display-name: Softway Medical
+    description: |-
+      Visualize and edit WORD reports
+objects:
+
+#################################################################################################
+#                                             Backend                                           #
+#################################################################################################
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: reports-onlyoffice-standalone
+    labels:
+      app: reports-onlyoffice-standalone
+      tier: backend
+      version: ${VERSION}
+      revision: ${REVISION}
+  spec:
+    replicas: 1
+    selector:
+      app: reports-onlyoffice-standalone
+      tier: backend
+      version: ${VERSION}
+    triggers:
+    - type: "ConfigChange"
+    - type: "ImageChange"
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - reports-onlyoffice-standalone
+        from:
+          kind: "ImageStreamTag"
+          name: "reports-onlyoffice-standalone:${BACKEND_TAG}"
+    template:
+      metadata:
+        labels:
+          app: reports-onlyoffice-standalone
+          tier: backend
+          version: ${VERSION}
+          revision: ${REVISION}
+      spec:
+        containers:
+        - name: reports-onlyoffice-standalone
+          ports:
+          - name: http
+            containerPort: 80
+            protocol: TCP
+          resources:
+            requests:
+              memory: 250Mi
+              cpu: 250m
+            limits:
+              memory: 1Gi
+              cpu: 750m
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /
+              port: 80
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 3
+            initialDelaySeconds: 180
+          readinessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /
+              port: 80
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 6
+            initialDelaySeconds: 180
+
+#################################################################################################
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: reports-onlyoffice-standalone
+    labels:
+      app: reports-onlyoffice-standalone
+      tier: backend
+  spec:
+    ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
+    selector:
+      app: reports-onlyoffice-standalone
+      tier: backend
+
+#################################################################################################
+
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: reports-onlyoffice-standalone
+    labels:
+      app: reports-onlyoffice-standalone
+      tier: backend
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+    - name: ${BACKEND_TAG}
+      from:
+        kind: DockerImage
+        name: onlyoffice/4testing-documentserver-ee:${BACKEND_TAG}
+      importPolicy:
+        scheduled: true
+      referencePolicy:
+        type: Local
+- apiVersion: v1
+  #################################################################################################
+
+  kind: Route
+  metadata:
+    annotations:
+      haproxy.router.openshift.io/disable_cookies: "true"
+    name: reports-onlyoffice-standalone
+    labels:
+      app: reports-onlyoffice-standalone
+      tier: backend
+  spec:
+    host: ${HOST}
+    path: /
+    to:
+      kind: Service
+      name: reports-onlyoffice-standalone
+    port:
+      targetPort: http
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: None
+
+
+#################################################################################################
+#                                           Parameters                                          #
+#################################################################################################
+
+parameters:
+- name: HOST
+  displayName: Hostname
+  description: Hostname on which application will be available
+  value: reports-onlyoffice-standalone.swmapps.net
+  required: true
+- name: VERSION
+  displayName: Version
+  description: Version of the deployment
+  value: test
+  required: true
+- name: REVISION
+  displayName: Revision
+  description: Revision SHA of the deployment
+  required: true
+- name: BACKEND_TAG
+  displayName: Backend tag
+  description: Backend docker image tag
+  value: 7.4.0.173
+  required: true
